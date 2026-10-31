@@ -5,123 +5,71 @@
 <meta charset="UTF-8">
 <meta name="viewport"
  content="width=device-width,initial-scale=1">
-<title>車検証QR v10</title>
+<title>車検証QR v11</title>
 
 <style>
-* { box-sizing:border-box; }
-
-body {
-  margin:0;
-  padding:14px;
-  background:#f3f5f7;
-  color:#222;
-  font:16px -apple-system,BlinkMacSystemFont,sans-serif;
+*{box-sizing:border-box}
+body{
+ margin:0;padding:14px;background:#f3f5f7;
+ color:#222;
+ font:16px -apple-system,BlinkMacSystemFont,sans-serif
 }
-
-main { max-width:600px; margin:auto; }
-h1 { font-size:23px; }
-
-.card {
-  background:white;
-  padding:16px;
-  border-radius:14px;
-  margin:14px 0;
+main{max-width:600px;margin:auto}
+h1{font-size:23px}
+.card{
+ background:white;padding:16px;
+ border-radius:14px;margin:14px 0
 }
-
-p {
-  color:#555;
-  line-height:1.6;
+p{line-height:1.6;color:#555}
+.videoBox{
+ position:relative;background:#152330;
+ border-radius:12px;overflow:hidden
 }
-
-.videoBox {
-  position:relative;
-  background:#152330;
-  border-radius:12px;
-  overflow:hidden;
+video{
+ width:100%;max-height:440px;
+ min-height:230px;
+ object-fit:contain;display:block
 }
-
-video {
-  display:block;
-  width:100%;
-  min-height:240px;
-  max-height:450px;
-  object-fit:contain;
+.target{
+ position:absolute;width:60%;
+ aspect-ratio:1;left:50%;top:50%;
+ transform:translate(-50%,-50%);
+ border:3px solid #37e58a;
+ border-radius:12px;pointer-events:none
 }
-
-.target {
-  position:absolute;
-  width:54%;
-  aspect-ratio:1;
-  left:50%;
-  top:50%;
-  transform:translate(-50%,-50%);
-  border:3px solid #37e58a;
-  border-radius:12px;
-  pointer-events:none;
+.slots{
+ display:grid;grid-template-columns:repeat(5,1fr);
+ gap:6px;margin:15px 0
 }
-
-.slots {
-  display:grid;
-  grid-template-columns:repeat(5,1fr);
-  gap:6px;
-  margin:15px 0;
+.slot{
+ text-align:center;padding:12px 2px;
+ border:2px solid #abb7c2;
+ background:#eef1f4;border-radius:9px;
+ font-size:13px;font-weight:bold
 }
-
-.slot {
-  padding:13px 2px;
-  border:2px solid #aab6c1;
-  background:#eef1f4;
-  border-radius:9px;
-  text-align:center;
-  font-size:13px;
-  font-weight:bold;
+.slot.done{
+ background:#d6f5df;
+ border-color:#239650;color:#166431
 }
-
-.slot.active {
-  background:#e2efff;
-  border-color:#1769aa;
+button{
+ width:100%;padding:14px;margin-top:10px;
+ border:0;border-radius:10px;
+ background:#1769aa;color:white;
+ font-size:16px;font-weight:bold
 }
-
-.slot.done {
-  background:#d6f5df;
-  border-color:#239650;
-  color:#166431;
+button.secondary{background:#66717b}
+button:disabled{opacity:.5}
+select{
+ width:100%;padding:12px;
+ font-size:16px;border:1px solid #ccc;
+ border-radius:8px;background:white
 }
-
-button {
-  width:100%;
-  padding:14px;
-  margin-top:10px;
-  border:0;
-  border-radius:10px;
-  background:#1769aa;
-  color:white;
-  font-size:16px;
-  font-weight:bold;
+pre{
+ background:#eef1f4;padding:13px;
+ border-radius:9px;line-height:1.7;
+ white-space:pre-wrap;overflow-wrap:anywhere
 }
-
-button.secondary { background:#66717b; }
-button:disabled { opacity:.5; }
-
-select {
-  width:100%;
-  padding:12px;
-  border:1px solid #cbd0d6;
-  border-radius:8px;
-  background:white;
-  font-size:16px;
-}
-
-pre {
-  background:#eef1f4;
-  border-radius:9px;
-  padding:13px;
-  white-space:pre-wrap;
-  overflow-wrap:anywhere;
-  line-height:1.7;
-}
-
-.small { font-size:13px; color:#666; }
+.small{font-size:13px;color:#666}
 </style>
 
 <script src="https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.1/umd/zxing-browser.min.js"></script>
@@ -130,437 +78,429 @@ pre {
 <body>
 <main>
 
-<h1>車検証QR ライブスキャン v10</h1>
+<h1>車検証QR ライブスキャン v11</h1>
 
 <p>
-iPhone 8向け調整版。
-QRコードを1個ずつ中央に映して、
-ゆっくり右へ動かしてな。
+QRコードを読む順番は自由やで！
+カメラを動かして、5個のデータを集めよう。
 </p>
 
 <div class="card">
 
-  <label for="quality">
-    <strong>カメラ画質</strong>
-  </label>
+<label for="quality"><b>カメラ画質</b></label>
+<select id="quality">
+ <option value="standard">標準 1280×720</option>
+ <option value="high">高画質 1920×1080</option>
+</select>
 
-  <select id="quality">
-    <option value="standard">
-      標準 1280×720（おすすめ）
-    </option>
-    <option value="high">
-      高画質 1920×1080
-    </option>
-  </select>
+<p class="small">
+iPhone 8では、少し離して
+ピントが合う位置で試してな。
+</p>
 
-  <p class="small">
-    画質は希望値やで。
-    実際の解像度はカメラ起動後に表示するわ。
-  </p>
+<div class="videoBox">
+ <video id="video" autoplay muted playsinline></video>
+ <div class="target"></div>
+</div>
 
-  <div class="videoBox">
-    <video id="video"
-      autoplay muted playsinline></video>
-    <div class="target"></div>
-  </div>
+<p id="cameraInfo" class="small">
+カメラ未起動
+</p>
 
-  <p id="cameraInfo" class="small">
-    カメラ未起動
-  </p>
+<div id="slots" class="slots"></div>
 
-  <div id="slots" class="slots"></div>
+<p id="guide">カメラを起動してな。</p>
 
-  <p id="guide">
-    カメラを起動してな。
-  </p>
+<button id="start" type="button">
+カメラを起動する
+</button>
 
-  <button id="start" type="button">
-    カメラを起動する
-  </button>
+<button id="stop" class="secondary"
+ type="button" disabled>
+カメラを停止する
+</button>
 
-  <button id="stop" type="button"
-    class="secondary" disabled>
-    カメラを停止する
-  </button>
+<button id="undo" class="secondary" type="button">
+最後のQRを取り消す
+</button>
 
-  <button id="undo" type="button"
-    class="secondary">
-    最後のQRを取り消す
-  </button>
-
-  <button id="reset" type="button"
-    class="secondary">
-    最初からやり直す
-  </button>
+<button id="reset" class="secondary" type="button">
+最初からやり直す
+</button>
 </div>
 
 <div class="card">
-  <h3>読み取り結果</h3>
-
-  <pre id="result">
-0 / 5 読み取り済み
-  </pre>
-
-  <p class="small">
-    QRデータはブラウザ内で処理します。
-    スプレッドシートへの送信は行いません。
-    ライブラリの取得にはネット接続が必要です。
-  </p>
+<h3>読み取り結果</h3>
+<pre id="result">0 / 5 読み取り済み</pre>
+<p class="small">
+QRデータはブラウザ内で処理します。
+車台番号は一部を隠して表示します。
+スプレッドシートへの送信はしません。
+</p>
 </div>
-
 </main>
 
 <script>
 'use strict';
 
-const $ = id => document.getElementById(id);
+const $=id=>document.getElementById(id);
 
-const qrValues = [];
+const qrValues=[];
+let controls=null;
+let running=false;
+let starting=false;
+let completed=false;
+let generation=0;
+let lastAccepted=0;
+let displayResult='';
 
-let controls = null;
-let running = false;
-let starting = false;
-let completed = false;
-let generation = 0;
-let lastAccepted = 0;
-let lastResult = '';
+function render(){
+ const slots=$('slots');
+ slots.replaceChildren();
 
-function render() {
-  const slots = $('slots');
-  slots.replaceChildren();
+ for(let i=0;i<5;i++){
+  const div=document.createElement('div');
+  div.className='slot';
 
-  for (let i=0; i<5; i++) {
-    const div = document.createElement('div');
-    div.className = 'slot';
-
-    if (i < qrValues.length) {
-      div.classList.add('done');
-      div.textContent = '✓ QR' + (i+1);
-    } else if (i === qrValues.length) {
-      div.classList.add('active');
-      div.textContent = 'QR' + (i+1);
-    } else {
-      div.textContent = 'QR' + (i+1);
-    }
-
-    slots.appendChild(div);
+  if(i<qrValues.length){
+   div.classList.add('done');
+   div.textContent='✓ '+(i+1)+'個目';
+  }else{
+   div.textContent='未取得';
   }
 
-  if (completed) {
-    $('guide').textContent =
-      '5個取得完了！ 車両情報を確認してな。';
-  } else if (running) {
-    $('guide').textContent =
-      '左から' + (qrValues.length+1) +
-      '番目のQRを映してな。';
-  } else if (!starting) {
-    $('guide').textContent =
-      qrValues.length +
-      '個取得済み。開始ボタンで続きから読めるで。';
-  }
+  slots.appendChild(div);
+ }
 
-  if (!completed) {
-    $('result').textContent =
-      qrValues.length + ' / 5 読み取り済み';
-  }
+ $('start').disabled=running||starting||completed;
+ $('stop').disabled=!running&&!starting;
 
-  $('start').disabled =
-    running || starting || completed;
+ if(completed){
+  $('guide').textContent=
+   '5個取得完了！解析結果を確認してな。';
+ }else if(starting){
+  $('guide').textContent='カメラ起動中…';
+ }else if(running){
+  $('guide').textContent=
+   '取得 '+qrValues.length+
+   '/5：まだ読んでへんQRに向けてな。';
+ }else{
+  $('guide').textContent=
+   '取得 '+qrValues.length+
+   '/5：開始ボタンで続きから読めるで。';
+ }
 
-  $('stop').disabled =
-    !running && !starting;
+ $('result').textContent=displayResult||
+  qrValues.length+' / 5 読み取り済み';
 }
 
-function stopCamera() {
-  generation++;
-  running = false;
-  starting = false;
+function stopCamera(){
+ generation++;
+ running=false;
+ starting=false;
 
-  if (controls) {
-    try { controls.stop(); } catch(e) {}
-    controls = null;
+ if(controls){
+  try{controls.stop()}catch(e){}
+  controls=null;
+ }
+
+ const v=$('video');
+ if(v.srcObject){
+  v.srcObject.getTracks().forEach(t=>t.stop());
+  v.srcObject=null;
+ }
+
+ $('cameraInfo').textContent='カメラ停止';
+ render();
+}
+
+function cameraInfo(){
+ const v=$('video');
+ let msg='映像：'+v.videoWidth+'×'+v.videoHeight;
+
+ const track=v.srcObject?.getVideoTracks()[0];
+ if(track){
+  const s=track.getSettings();
+  if(s.width&&s.height){
+   msg+='\n設定：'+s.width+'×'+s.height;
   }
+ }
+ $('cameraInfo').textContent=msg;
+}
 
-  const v = $('video');
+// 読み取り順を決めず、重複しないデータを収集
+function acceptQR(text){
+ if(!running||completed||!text)return;
 
-  if (v.srcObject) {
-    v.srcObject.getTracks().forEach(track => {
-      track.stop();
-    });
-    v.srcObject = null;
-  }
+ if(qrValues.includes(text))return;
 
-  $('cameraInfo').textContent = 'カメラ停止';
+ const now=Date.now();
+ if(now-lastAccepted<900)return;
+
+ if(text.length<8||text.length>500)return;
+
+ qrValues.push(text);
+ lastAccepted=now;
+ displayResult='';
+
+ if(navigator.vibrate){
+  try{navigator.vibrate(80)}catch(e){}
+ }
+
+ if(qrValues.length===5){
+  completed=true;
+  displayResult=analyzeCar();
+  stopCamera();
+ }else{
   render();
+ }
 }
 
-function updateCameraInfo() {
-  const video = $('video');
+async function launch(constraints,token){
+ const reader=new ZXingBrowser.BrowserQRCodeReader();
 
-  let message = '実際の映像：' +
-    video.videoWidth + '×' +
-    video.videoHeight;
-
-  const stream = video.srcObject;
-
-  if (stream) {
-    const track = stream.getVideoTracks()[0];
-
-    if (track && track.getSettings) {
-      const settings = track.getSettings();
-
-      if (settings.width && settings.height) {
-        message += '\nカメラ設定：' +
-          settings.width + '×' +
-          settings.height;
-      }
-
-      if (settings.facingMode) {
-        message +=
-          '\nカメラ：' + settings.facingMode;
-      }
-    }
+ const c=await reader.decodeFromConstraints(
+  constraints,$('video'),(res,err)=>{
+   if(token!==generation)return;
+   if(res)acceptQR(res.getText());
   }
+ );
 
-  $('cameraInfo').textContent = message;
+ if(token!==generation||completed){
+  c.stop();
+  return;
+ }
+
+ controls=c;
+ running=true;
+ starting=false;
+ cameraInfo();
+ render();
 }
 
-function acceptQR(text) {
-  if (!running || completed || !text) return;
+$('start').onclick=async()=>{
+ if(running||starting||completed)return;
 
-  // 同じQRは再登録しない
-  if (qrValues.includes(text)) return;
+ if(!window.ZXingBrowser?.BrowserQRCodeReader){
+  $('guide').textContent=
+   'QRライブラリを読み込めません。';
+  return;
+ }
 
-  // 連続誤検出を防ぐ
-  const now = Date.now();
-  if (now-lastAccepted < 1000) return;
+ if(!navigator.mediaDevices?.getUserMedia){
+  $('guide').textContent=
+   'このブラウザではカメラを使えません。';
+  return;
+ }
 
-  if (text.length < 8 || text.length > 500) {
-    return;
+ starting=true;
+ running=true;
+ const token=++generation;
+ render();
+
+ const high=$('quality').value==='high';
+
+ const constraints={
+  audio:false,
+  video:{
+   facingMode:{ideal:'environment'},
+   width:{ideal:high?1920:1280},
+   height:{ideal:high?1080:720},
+   frameRate:{ideal:15,max:30}
   }
+ };
 
-  qrValues.push(text);
-  lastAccepted = now;
+ try{
+  await launch(constraints,token);
+ }catch(e){
+  if(token!==generation)return;
 
-  if (navigator.vibrate) {
-    try { navigator.vibrate(80); } catch(e) {}
-  }
-
-  if (qrValues.length === 5) {
-    completed = true;
-    showCar();
-    stopCamera();
-  } else {
-    render();
-  }
-}
-
-async function launchCamera(constraints, token) {
-  const reader =
-    new ZXingBrowser.BrowserQRCodeReader();
-
-  const c = await reader.decodeFromConstraints(
-    constraints,
-    $('video'),
-    (res, err) => {
-      if (token !== generation) return;
-      if (res) {
-        acceptQR(res.getText());
-      }
-    }
-  );
-
-  if (token !== generation || completed) {
-    c.stop();
-    return false;
-  }
-
-  controls = c;
-  running = true;
-  starting = false;
-
-  updateCameraInfo();
-  render();
-  return true;
-}
-
-$('start').onclick = async () => {
-  if (running || starting || completed) return;
-
-  if (!window.ZXingBrowser ||
-      !ZXingBrowser.BrowserQRCodeReader) {
-    $('guide').textContent =
-      'QRライブラリを読み込めません。';
-    return;
-  }
-
-  if (!navigator.mediaDevices ||
-      !navigator.mediaDevices.getUserMedia) {
-    $('guide').textContent =
-      'Safariでカメラが使えません。';
-    return;
-  }
-
-  starting = true;
-
-  // 起動途中のQR検出を取りこぼさない
-  running = true;
-  const token = ++generation;
-
-  $('guide').textContent =
-    'カメラ起動中。許可してな。';
-
-  render();
-
-  const high = $('quality').value === 'high';
-
-  const constraints = {
+  try{
+   await launch({
     audio:false,
-    video:{
-      facingMode:{ideal:'environment'},
-      width:{ideal:high ? 1920 : 1280},
-      height:{ideal:high ? 1080 : 720},
-      frameRate:{ideal:15,max:30}
-    }
-  };
-
-  try {
-    await launchCamera(constraints, token);
-  } catch(e) {
-    if (token !== generation) return;
-
-    // 画質指定が原因の場合は緩い条件で再試行
-    try {
-      const fallback = {
-        audio:false,
-        video:{
-          facingMode:{ideal:'environment'}
-        }
-      };
-
-      await launchCamera(fallback, token);
-    } catch(err) {
-      if (token !== generation) return;
-
-      running = false;
-      starting = false;
-
-      $('guide').textContent =
-        'カメラ起動エラー：' +
-        (err.message || String(err));
-
-      render();
-    }
+    video:{facingMode:{ideal:'environment'}}
+   },token);
+  }catch(err){
+   if(token!==generation)return;
+   stopCamera();
+   $('guide').textContent=
+    'カメラ起動エラー：'+
+    (err.message||String(err));
   }
+ }
 };
 
-$('stop').onclick = () => {
-  stopCamera();
-  $('guide').textContent =
-    '停止したで。続きから再開できるで。';
+$('stop').onclick=()=>{
+ stopCamera();
+ $('guide').textContent=
+  '停止したで。続きから再開できるで。';
 };
 
-$('undo').onclick = () => {
-  if (!qrValues.length) return;
+$('undo').onclick=()=>{
+ if(!qrValues.length)return;
 
-  if (completed) {
-    completed = false;
-    lastResult = '';
-  }
-
-  qrValues.pop();
-  lastAccepted = 0;
-
-  render();
+ qrValues.pop();
+ completed=false;
+ lastAccepted=0;
+ displayResult='';
+ render();
 };
 
-$('reset').onclick = () => {
-  stopCamera();
-
-  qrValues.length = 0;
-  completed = false;
-  lastAccepted = 0;
-  lastResult = '';
-
-  render();
+$('reset').onclick=()=>{
+ stopCamera();
+ qrValues.length=0;
+ completed=false;
+ lastAccepted=0;
+ displayResult='';
+ render();
 };
 
-function formatDate(value, hasDay) {
-  const length = hasDay ? 6 : 4;
+// 配列の全並び順を調べる
+function permutations(items){
+ if(items.length===0)return [[]];
 
-  if (!new RegExp('^\\d{' + length + '}$')
-       .test(value)) {
-    return '要確認';
+ const answer=[];
+ items.forEach((item,i)=>{
+  const rest=[
+   ...items.slice(0,i),
+   ...items.slice(i+1)
+  ];
+
+  for(const p of permutations(rest)){
+   answer.push([item,...p]);
   }
-
-  const year = 2000 + Number(value.slice(0,2));
-  const month = Number(value.slice(2,4));
-  const day = hasDay
-    ? Number(value.slice(4,6)) : 1;
-
-  const date = new Date(year,month-1,day);
-
-  if (
-    date.getFullYear() !== year ||
-    date.getMonth() !== month-1 ||
-    date.getDate() !== day
-  ) {
-    return '要確認';
-  }
-
-  return year+'年'+month+'月'+
-    (hasDay ? day+'日' : '');
+ });
+ return answer;
 }
 
-function showCar() {
-  const a = (
-    qrValues[0]+qrValues[1]+qrValues[2]
-  ).split('/');
+function dateText(value,hasDay){
+ const len=hasDay?6:4;
 
-  const b = (
-    qrValues[3]+qrValues[4]
-  ).split('/');
+ if(!new RegExp('^\\d{'+len+'}$').test(value)){
+  return null;
+ }
 
-  if (
-    a[0] !== '2' ||
-    b[0] !== '2' ||
-    a.length < 17 ||
-    b.length !== 6
-  ) {
-    $('result').textContent =
-      '5個取得したで！\n' +
-      'ただし車検証のデータ形式と一致せえへん。\n' +
-      '順番が違う可能性があるから、' +
-      '実際の書類と確認してな。';
-    return;
+ const year=2000+Number(value.slice(0,2));
+ const month=Number(value.slice(2,4));
+ const day=hasDay?Number(value.slice(4,6)):1;
+
+ const d=new Date(year,month-1,day);
+
+ if(
+  d.getFullYear()!==year||
+  d.getMonth()!==month-1||
+  d.getDate()!==day
+ )return null;
+
+ return year+'年'+month+'月'+
+  (hasDay?day+'日':'');
+}
+
+function candidateFrom(order){
+ const a=(
+  order[0]+order[1]+order[2]
+ ).split('/');
+
+ const b=(
+  order[3]+order[4]
+ ).split('/');
+
+ if(
+  a[0]!=='2'||
+  b[0]!=='2'||
+  a.length<17||
+  b.length!==6
+ )return null;
+
+ const model=(a[5]||'').trim();
+ const reg=(b[1]||'').trim();
+ const chassis=(b[3]||'').trim();
+ const engine=(b[4]||'').trim();
+
+ const first=dateText((a[4]||'').trim(),false);
+ const expiry=dateText((a[3]||'').trim(),true);
+
+ if(
+  !model||!model.includes('-')||
+  !reg||!chassis||!engine||
+  !first||!expiry
+ )return null;
+
+ return {model,reg,chassis,engine,first,expiry};
+}
+
+function analyzeCar(){
+ if(qrValues.length!==5){
+  return 'まだ5個そろってへんで。';
+ }
+
+ const matches=[];
+ const seen=new Set();
+
+ for(const order of permutations(qrValues)){
+  const car=candidateFrom(order);
+  if(!car)continue;
+
+  const key=JSON.stringify(car);
+
+  if(!seen.has(key)){
+   seen.add(key);
+   matches.push(car);
   }
+ }
 
-  const chassis = b[3].trim();
-
-  $('result').textContent = [
-    '【v10 車両情報解析結果】',
-    '',
-    '登録番号：'+b[1].trim(),
-    '車台番号：****'+chassis.slice(-4),
-    '型式：'+a[5].trim(),
-    '原動機型式：'+b[4].trim(),
-    '初度登録：'+
-      formatDate(a[4].trim(),false),
-    '車検満了日：'+
-      formatDate(a[3].trim(),true),
-    '',
-    '※実際の車検証と照合してください。',
-    '※スプレッドシートには送信していません。'
+ if(matches.length===0){
+  return [
+   '【5個取得済み】',
+   '',
+   '車検証の形式に一致する',
+   '組み合わせが見つからへんかった。',
+   '',
+   '別のQRが混ざった可能性があるで。',
+   '最後のQRを取り消して再試行してな。',
+   '',
+   '※シートへの送信なし'
   ].join('\n');
+ }
+
+ if(matches.length!==1){
+  return [
+   '【5個取得済み】',
+   '',
+   '複数の組み合わせが見つかったで。',
+   '候補数：'+matches.length,
+   '',
+   '正しい順番を確定できへんため、',
+   '車両情報は表示せず要確認にするで。',
+   '',
+   '※シートへの送信なし'
+  ].join('\n');
+ }
+
+ const c=matches[0];
+
+ return [
+  '【v11 車両情報解析結果】',
+  '',
+  '登録番号：'+c.reg,
+  '車台番号：****'+c.chassis.slice(-4),
+  '型式：'+c.model,
+  '原動機型式：'+c.engine,
+  '初度登録：'+c.first,
+  '車検満了日：'+c.expiry,
+  '',
+  '5個のQRから組み合わせを解析したで！',
+  '',
+  '※実際の車検証と必ず照合してな。',
+  '※シートへの送信なし'
+ ].join('\n');
 }
 
 $('video').addEventListener(
-  'loadedmetadata',
-  updateCameraInfo
+ 'loadedmetadata',cameraInfo
 );
 
-window.addEventListener('pagehide', stopCamera);
-
+window.addEventListener('pagehide',stopCamera);
 render();
 </script>
 </body>
