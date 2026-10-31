@@ -1,0 +1,398 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport"
+ content="width=device-width,initial-scale=1">
+<title>車検証QR ライブスキャン v9</title>
+
+<style>
+* { box-sizing:border-box; }
+body {
+  margin:0;
+  padding:16px;
+  background:#f3f5f7;
+  color:#222;
+  font:16px -apple-system,BlinkMacSystemFont,sans-serif;
+}
+main { max-width:600px; margin:auto; }
+h1 { font-size:23px; }
+.card {
+  background:white;
+  padding:16px;
+  border-radius:14px;
+  margin:14px 0;
+}
+p { line-height:1.6; color:#555; }
+.videoBox {
+  position:relative;
+  background:#17212b;
+  border-radius:12px;
+  overflow:hidden;
+}
+video {
+  width:100%;
+  min-height:220px;
+  max-height:420px;
+  object-fit:contain;
+  display:block;
+}
+.target {
+  position:absolute;
+  width:46%;
+  aspect-ratio:1;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+  border:3px solid #31e98a;
+  border-radius:12px;
+  pointer-events:none;
+  box-shadow:0 0 0 999px #0002;
+}
+.slots {
+  display:grid;
+  grid-template-columns:repeat(5,1fr);
+  gap:7px;
+  margin-top:15px;
+}
+.slot {
+  border:2px solid #aeb9c3;
+  background:#edf1f5;
+  border-radius:9px;
+  text-align:center;
+  padding:12px 2px;
+  font-size:13px;
+  font-weight:bold;
+}
+.slot.active {
+  border-color:#1769aa;
+  background:#e4f0fc;
+}
+.slot.done {
+  background:#d9f5e2;
+  border-color:#279f57;
+  color:#176632;
+}
+button {
+  width:100%;
+  padding:15px;
+  border:0;
+  border-radius:10px;
+  color:white;
+  background:#1769aa;
+  font-size:16px;
+  font-weight:bold;
+  margin-top:12px;
+}
+button.secondary { background:#606b76; }
+button:disabled { opacity:.5; }
+pre {
+  background:#eef1f4;
+  padding:14px;
+  border-radius:10px;
+  line-height:1.8;
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
+}
+.small { font-size:13px; color:#666; }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.1/umd/zxing-browser.min.js"></script>
+</head>
+
+<body>
+<main>
+<h1>車検証QR ライブスキャン v9</h1>
+
+<p>
+iPhoneのカメラを左から右へ動かして、
+5個のQRを順番に読み取ってな。
+</p>
+
+<div class="card">
+  <div class="videoBox">
+    <video id="video"
+      autoplay muted playsinline></video>
+    <div class="target"></div>
+  </div>
+
+  <div id="slots" class="slots"></div>
+
+  <p id="guide">
+    カメラを起動してな。
+  </p>
+
+  <button id="start" type="button">
+    カメラを起動する
+  </button>
+
+  <button id="stop"
+    type="button" class="secondary" disabled>
+    カメラを停止する
+  </button>
+
+  <button id="reset"
+    type="button" class="secondary">
+    最初からやり直す
+  </button>
+</div>
+
+<div class="card">
+  <h3>読み取り結果</h3>
+  <pre id="result">0 / 5 読み取り済み</pre>
+  <p class="small">
+    読み取り内容はこの画面内だけで保持します。
+    Googleスプレッドシートへの送信はしません。
+  </p>
+</div>
+</main>
+
+<script>
+'use strict';
+
+const $ = id => document.getElementById(id);
+
+const qrValues = [];
+let controls = null;
+let running = false;
+let completed = false;
+let starting = false;
+let scanGeneration = 0;
+let lastAcceptedAt = 0;
+
+function render() {
+  const slots = $('slots');
+  slots.replaceChildren();
+
+  for (let i = 0; i < 5; i++) {
+    const div = document.createElement('div');
+    div.className = 'slot';
+
+    if (i < qrValues.length) {
+      div.classList.add('done');
+      div.textContent = '✓ QR' + (i + 1);
+    } else if (i === qrValues.length) {
+      div.classList.add('active');
+      div.textContent = 'QR' + (i + 1);
+    } else {
+      div.textContent = 'QR' + (i + 1);
+    }
+
+    slots.appendChild(div);
+  }
+
+  $('result').textContent =
+    qrValues.length + ' / 5 読み取り済み';
+
+  if (completed) {
+    $('guide').textContent =
+      '5個のQRを取得したで！';
+  } else {
+    $('guide').textContent =
+      '左から' + (qrValues.length + 1) +
+      '番目のQRを中央に映してな。';
+  }
+}
+
+function stopCamera() {
+  scanGeneration++;
+  running = false;
+  starting = false;
+
+  if (controls) {
+    try { controls.stop(); } catch (e) {}
+    controls = null;
+  }
+
+  const video = $('video');
+
+  if (video.srcObject) {
+    for (const track of video.srcObject.getTracks()) {
+      track.stop();
+    }
+    video.srcObject = null;
+  }
+
+  $('start').disabled = completed;
+  $('stop').disabled = true;
+}
+
+function onDecoded(text) {
+  if (!running || completed || !text) return;
+
+  // 同じコードの重複を除外
+  if (qrValues.includes(text)) return;
+
+  // 短時間の連続検出を抑制
+  const now = Date.now();
+  if (now - lastAcceptedAt < 750) return;
+
+  // 想定する車検証QRの断片のみ受け付ける
+  if (text.length < 8 || text.length > 200) return;
+
+  qrValues.push(text);
+  lastAcceptedAt = now;
+
+  if (navigator.vibrate) {
+    navigator.vibrate(100);
+  }
+
+  render();
+
+  if (qrValues.length === 5) {
+    completed = true;
+    stopCamera();
+    showCar();
+  }
+}
+
+$('start').onclick = async () => {
+  if (running || starting || completed) return;
+
+  if (!window.ZXingBrowser ||
+      !ZXingBrowser.BrowserQRCodeReader) {
+    $('guide').textContent =
+      'ZXingライブラリを読み込めませんでした。';
+    return;
+  }
+
+  if (!navigator.mediaDevices ||
+      !navigator.mediaDevices.getUserMedia) {
+    $('guide').textContent =
+      'この画面ではカメラを利用できません。' +
+      ' HTTPSで直接開いているか確認してな。';
+    return;
+  }
+
+  starting = true;
+  $('start').disabled = true;
+  $('guide').textContent =
+    'カメラ起動中。アクセスを許可してな。';
+
+  const generation = ++scanGeneration;
+
+  try {
+    const reader =
+      new ZXingBrowser.BrowserQRCodeReader();
+
+    const c = await reader.decodeFromVideoDevice(
+      undefined,
+      $('video'),
+      (res, err) => {
+        if (generation !== scanGeneration) return;
+
+        if (res) {
+          onDecoded(res.getText());
+        }
+      }
+    );
+
+    if (generation !== scanGeneration || completed) {
+      c.stop();
+      return;
+    }
+
+    controls = c;
+    running = true;
+    starting = false;
+
+    $('start').disabled = true;
+    $('stop').disabled = false;
+    render();
+
+  } catch (e) {
+    starting = false;
+    running = false;
+    $('start').disabled = false;
+    $('guide').textContent =
+      'カメラ起動エラー：' +
+      (e.message || String(e));
+  }
+};
+
+$('stop').onclick = () => {
+  stopCamera();
+  $('guide').textContent =
+    '停止したで。続きから再開できるで。';
+};
+
+$('reset').onclick = () => {
+  stopCamera();
+  qrValues.length = 0;
+  completed = false;
+  lastAcceptedAt = 0;
+  $('result').textContent =
+    '0 / 5 読み取り済み';
+  render();
+};
+
+function showCar() {
+  // QR1～3、QR4～5の順番で結合
+  const a = (
+    qrValues[0] +
+    qrValues[1] +
+    qrValues[2]
+  ).split('/');
+
+  const b = (
+    qrValues[3] +
+    qrValues[4]
+  ).split('/');
+
+  if (
+    a[0] !== '2' ||
+    b[0] !== '2' ||
+    a.length < 17 ||
+    b.length !== 6
+  ) {
+    $('result').textContent =
+      '5個の読み取りは完了したで！\n' +
+      'ただしQRの並び・形式が一致せえへん。\n' +
+      '最初から左→右の順番で試してな。';
+    return;
+  }
+
+  const date = (v, hasDay) => {
+    const n = hasDay ? 6 : 4;
+    if (!new RegExp('^\\d{' + n + '}$').test(v)) {
+      return '要確認';
+    }
+
+    const y = 2000 + Number(v.slice(0,2));
+    const m = Number(v.slice(2,4));
+    const d = hasDay ? Number(v.slice(4,6)) : 1;
+    const dt = new Date(y,m-1,d);
+
+    if (dt.getFullYear() !== y ||
+        dt.getMonth() !== m-1 ||
+        dt.getDate() !== d) {
+      return '要確認';
+    }
+
+    return y + '年' + m + '月' +
+      (hasDay ? d + '日' : '');
+  };
+
+  const chassis = b[3].trim();
+
+  $('result').textContent = [
+    '【車両情報・v9試験結果】',
+    '',
+    '登録番号：' + b[1].trim(),
+    '車台番号：****' + chassis.slice(-4),
+    '型式：' + a[5].trim(),
+    '原動機型式：' + b[4].trim(),
+    '初度登録：' + date(a[4].trim(),false),
+    '車検満了日：' + date(a[3].trim(),true),
+    '',
+    '※実際の車検証と照合してな。',
+    '※シートへの登録はしてへんで。'
+  ].join('\n');
+}
+
+render();
+window.addEventListener('pagehide', stopCamera);
+</script>
+</body>
+</html>
